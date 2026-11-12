@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emirates Skywards Rewards & Miles Calculator</title>
+  <style>
+    :root {
+      --primary: #c8102e;
+      --primary-dark: #9b0b22;
+      --primary-light: #fee2e2;
+      --accent: #d97706;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --bg-page: #f8fafc;
+      --bg-card: #ffffff;
+      --border: #e2e8f0;
+      --success: #16a34a;
+      --danger: #dc2626;
+      --radius: 12px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 10px 25px rgba(0,0,0,0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.5;
+      padding-bottom: 80px;
+    }
+
+    /* Top Navigation / Header */
+    header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: #ffffff;
+      padding: 24px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      box-shadow: var(--shadow-md);
+    }
+
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(8px);
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .header-title h1 {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.4px;
+    }
+
+    .header-title p {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    /* Budget Setting & Status Card */
+    .budget-card {
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      align-items: center;
+    }
+
+    .budget-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .budget-input-group label {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      opacity: 0.9;
+    }
+
+    .budget-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .budget-input {
+      background: #ffffff;
+      color: var(--text-main);
+      border: none;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 18px;
+      font-weight: 800;
+      width: 100%;
+      outline: none;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .metric-box {
+      background: rgba(0, 0, 0, 0.15);
+      border-radius: 8px;
+      padding: 8px 12px;
+      text-align: center;
+    }
+
+    .metric-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      opacity: 0.85;
+      font-weight: 600;
+    }
+
+    .metric-value {
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .metric-value.remaining {
+      color: #86efac; /* bright light green */
+    }
+
+    .metric-value.overbudget {
+      color: #fca5a5; /* light red */
+    }
+
+    /* Progress Bar */
+    .progress-container {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .progress-bar-bg {
+      background: rgba(0, 0, 0, 0.25);
+      height: 10px;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: #4ade80;
+      width: 0%;
+      transition: width 0.3s ease, background-color 0.3s ease;
+    }
+
+    .progress-bar-fill.warning {
+      background: #facc15;
+    }
+
+    .progress-bar-fill.danger {
+      background: #f87171;
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1200px;
+      margin: 24px auto;
+      padding: 0 16px;
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Controls: Search & Filter */
+    .controls-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .search-box {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-box:focus {
+      border-color: var(--primary);
+    }
+
+    .filter-pills {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+    }
+
+    .filter-pill {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .filter-pill:hover,
+    .filter-pill.active {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+
+    /* Product Grid */
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 16px;
+    }
+
+    .product-card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
+    }
+
+    .product-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: #cbd5e1;
+    }
+
+    .product-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      background: #f1f5f9;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      align-self: flex-start;
+    }
+
+    .product-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 4px;
+      line-height: 1.35;
+    }
+
+    .product-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      flex-grow: 1;
+    }
+
+    .product-price-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 12px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border);
+    }
+
+    .product-miles {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .product-usd {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .btn-add {
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      transition: background 0.2s;
+    }
+
+    .btn-add:hover {
+      background: var(--primary-dark);
+    }
+
+    /* Cart Sidebar */
+    .cart-sidebar {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      position: sticky;
+      top: 160px;
+      max-height: calc(100vh - 180px);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
+
+    .cart-header h2 {
+      font-size: 16px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cart-items-list {
+      overflow-y: auto;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-right: 4px;
+    }
+
+    .empty-cart-msg {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+      padding: 30px 10px;
+    }
+
+    .cart-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 10px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      gap: 8px;
+    }
+
+    .cart-item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .cart-item-name {
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .cart-item-cost {
+      font-size: 11px;
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .cart-item-controls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-qty {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-qty:hover {
+      background: #e2e8f0;
+    }
+
+    .qty-display {
+      font-size: 12px;
+      font-weight: 700;
+      min-width: 18px;
+      text-align: center;
+    }
+
+    .cart-summary {
+      border-top: 1px solid var(--border);
+      padding-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+
+    .summary-row.total {
+      font-size: 15px;
+      font-weight: 800;
+      padding-top: 6px;
+      border-top: 1px dashed var(--border);
+    }
+
+    .summary-row.remaining-row {
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .shipping-select {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      font-size: 12px;
+      margin-top: 6px;
+      outline: none;
+    }
+
+    .shipping-advice {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      line-height: 1.35;
+    }
+
+    .btn-action {
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: none;
+      width: 100%;
+      transition: all 0.2s;
+    }
+
+    .btn-whatsapp {
+      background: #25d366;
+      color: #ffffff;
+      margin-top: 10px;
+    }
+
+    .btn-whatsapp:hover {
+      background: #1eb956;
+    }
+
+    .btn-clear {
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 11px;
+      border: none;
+      cursor: pointer;
+      text-decoration: underline;
+      margin-top: 4px;
+    }
+
+    /* Floating Cart for Mobile */
+    .mobile-cart-btn {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--primary);
+      color: #ffffff;
+      padding: 14px 20px;
+      border-radius: 999px;
+      box-shadow: var(--shadow-lg);
+      border: none;
+      font-weight: 700;
+      font-size: 14px;
+      z-index: 50;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
+
+    @media (max-width: 900px) {
+      .mobile-cart-btn {
+        display: flex;
+      }
+      .cart-sidebar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        top: auto;
+        max-height: 80vh;
+        z-index: 60;
+        border-radius: 20px 20px 0 0;
+        box-shadow: 0 -10px 30px rgba(0,0,0,0.2);
+        transform: translateY(105%);
+        transition: transform 0.3s ease;
+      }
+      .cart-sidebar.open {
+        transform: translateY(0);
+      }
+      .cart-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 55;
+      }
+      .cart-backdrop.open {
+        display: block;
+      }
+    }
+
+    /* Notification Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #1e293b;
+      color: #ffffff;
+      padding: 10px 20px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: var(--shadow-lg);
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="header-content">
+      <div class="header-top">
+        <div class="header-title">
+          <div class="logo-badge">✈️ Emirates Skywards Rewards</div>
+          <h1>Miles Redemption & Cart Calculator</h1>
+          <p>Official Store Merchandising (emirates.store) &bull; Fixed Rate: 125 Miles = $1.00 USD</p>
+        </div>
+      </div>
+
+      <!-- Budget Configuration & Status -->
+      <div class="budget-card">
+        <div class="budget-input-group">
+          <label for="budgetInput">Your Starting Miles</label>
+          <div class="budget-input-wrapper">
+            <input type="number" id="budgetInput" class="budget-input" value="21975" step="125" min="0">
+          </div>
+        </div>
+
+        <div class="metric-box">
+          <div class="metric-label">Points Used</div>
+          <div class="metric-value" id="milesUsedDisplay">0</div>
+        </div>
+
+        <div class="metric-box">
+          <div class="metric-label">Points Remaining</div>
+          <div class="metric-value remaining" id="milesRemainingDisplay">21,975</div>
+        </div>
+
+        <div class="metric-box">
+          <div class="metric-label">Store Merchandise Value</div>
+          <div class="metric-value" id="usdValueDisplay">$0.00</div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-container">
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" id="progressBar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Container -->
+  <div class="container">
+    
+    <!-- Left Column: Products -->
+    <main>
+      <div class="controls-bar">
+        <input type="text" id="searchInput" class="search-box" placeholder="🔍 Search merchandise (e.g. A380, bag, leather, mug, model)...">
+        
+        <div class="filter-pills">
+          <button class="filter-pill active" data-category="all">All Items</button>
+          <button class="filter-pill" data-category="models">✈️ Aircraft Models</button>
+          <button class="filter-pill" data-category="bags">🧳 Luggage & Bags</button>
+          <button class="filter-pill" data-category="travel">🎒 Travel Essentials</button>
+          <button class="filter-pill" data-category="accessories">🎁 Accessories & Lifestyle</button>
+        </div>
+      </div>
+
+      <div class="products-grid" id="productsGrid">
+        <!-- Injected via JavaScript -->
+      </div>
+    </main>
+
+    <!-- Right Column: Cart Sidebar -->
+    <aside class="cart-sidebar" id="cartSidebar">
+      <div class="cart-header">
+        <h2>🛒 Your Reward Cart (<span id="cartCount">0</span>)</h2>
+        <button id="closeCartBtn" class="btn-qty" style="display:none;">✕</button>
+      </div>
+
+      <div class="cart-items-list" id="cartItemsList">
+        <div class="empty-cart-msg">Your cart is empty.<br>Add items from the store to calculate your miles.</div>
+      </div>
+
+      <div class="cart-summary">
+        <div class="summary-row">
+          <span>Starting Budget:</span>
+          <span id="summaryBudget">21,975 Miles</span>
+        </div>
+        <div class="summary-row">
+          <span>Total Points Used:</span>
+          <strong id="summaryUsed" style="color:var(--primary);">0 Miles</strong>
+        </div>
+        <div class="summary-row remaining-row">
+          <span>Points Left:</span>
+          <strong id="summaryLeft" style="color:var(--success);">21,975 Miles</strong>
+        </div>
+        <div class="summary-row">
+          <span>Total Retail Value:</span>
+          <strong id="summaryUsd">$0.00 USD</strong>
+        </div>
+
+        <!-- Shipping Destination Selector -->
+        <div style="margin-top: 8px;">
+          <label style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted);">Shipping Destination</label>
+          <select id="shippingSelect" class="shipping-select">
+            <option value="UK">🇬🇧 United Kingdom ($25 USD Courier)</option>
+            <option value="NL">🇳🇱 Netherlands ($25 USD Courier)</option>
+            <option value="IN">🇮🇳 India ($25 USD Courier)</option>
+          </select>
+          <div id="shippingAdvice" class="shipping-advice">
+            UK: £0 duty for orders &lt; £135. Standard 20% VAT applies. Smoothest shipping.
+          </div>
+        </div>
+
+        <button class="btn-action btn-whatsapp" id="btnShareWhatsApp">
+          📲 Copy Summary for WhatsApp
+        </button>
+        <button class="btn-clear" id="btnClearCart">Clear Cart</button>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Mobile Floating Cart Trigger -->
+  <button class="mobile-cart-btn" id="mobileCartTrigger">
+    🛒 Cart (<span id="mobileCartCount">0</span>) &bull; <span id="mobileMilesLeft">21,975 pts left</span>
+  </button>
+  <div class="cart-backdrop" id="cartBackdrop"></div>
+
+  <!-- Toast Message -->
+  <div class="toast" id="toast">📋 Copied to clipboard!</div>
+
+  <script>
+    // Product Catalog from Emirates Official Store (emirates.store)
+    // Rate: 125 Miles = $1.00 USD
+    const PRODUCTS = [
+      // Aircraft Models
+      {
+        id: "a380-200",
+        name: "Emirates A380-800 1:200 Scale Model",
+        category: "models",
+        categoryName: "Aircraft Models",
+        usdPrice: 91.00,
+        miles: 11375,
+        desc: "Premium collector edition with high-detail fuselage and wood-accent display stand."
+      },
+      {
+        id: "a380-400-diecast",
+        name: "Emirates A380-800 1:400 Die-Cast Model",
+        category: "models",
+        categoryName: "Aircraft Models",
+        usdPrice: 60.00,
+        miles: 7500,
+        desc: "Solid heavy-cast metal replica with realistic landing gears and precision livery."
+      },
+      {
+        id: "b777-250",
+        name: "Boeing 777-300ER 1:250 Scale Model",
+        category: "models",
+        categoryName: "Aircraft Models",
+        usdPrice: 39.00,
+        miles: 4875,
+        desc: "Detailed snapshot model with stand. Emirates signature flagship airliner."
+      },
+      {
+        id: "a350-250",
+        name: "Airbus A350-900 1:250 Scale Model",
+        category: "models",
+        categoryName: "Aircraft Models",
+        usdPrice: 39.00,
+        miles: 4875,
+        desc: "Official model of Emirates' next-generation fleet addition."
+      },
+      {
+        id: "a380-1000",
+        name: "Emirates A380-800 1:1000 Runway Edition",
+        category: "models",
+        categoryName: "Aircraft Models",
+        usdPrice: 26.00,
+        miles: 3250,
+        desc: "Compact desktop collector item with runway-textured display plaque."
+      },
+
+      // Luggage & Bags
+      {
+        id: "neo-xl-tote",
+        name: "Emirates neo XL Tote Bag",
+        category: "bags",
+        categoryName: "Luggage & Bags",
+        usdPrice: 160.00,
+        miles: 20000,
+        desc: "Ultra-roomy, water-resistant luxury tote with dedicated travel compartments."
+      },
+      {
+        id: "ek-luxe-cabin",
+        name: "EK Luxe Wheeled Cabin Trolley Bag",
+        category: "bags",
+        categoryName: "Luggage & Bags",
+        usdPrice: 90.50,
+        miles: 11313,
+        desc: "Smooth gliding spinner wheels, reinforced frame, approved airline carry-on size."
+      },
+      {
+        id: "ac-milan-holdall",
+        name: "AC Milan Retro Travel Holdall",
+        category: "bags",
+        categoryName: "Luggage & Bags",
+        usdPrice: 93.00,
+        miles: 11625,
+        desc: "Official Emirates sponsorship retro sports duffle with shoe compartment."
+      },
+      {
+        id: "real-madrid-duffle",
+        name: "Real Madrid Travel Duffle Bag",
+        category: "bags",
+        categoryName: "Luggage & Bags",
+        usdPrice: 85.00,
+        miles: 10625,
+        desc: "Durable travel duffle with club crest and padded shoulder strap."
+      },
+      {
+        id: "ek-luxe-carryon",
+        name: "EK Luxe Carry-On Overnight Bag",
+        category: "bags",
+        categoryName: "Luggage & Bags",
+        usdPrice: 53.00,
+        miles: 6625,
+        desc: "Structured weekend duffle with trolley sleeve and organizer pockets."
+      },
+      {
+        id: "waterproof-backpack",
+        name: "Emirates Waterproof Adventure Backpack",
+        category: "bags",
+        categoryName: "Luggage & Bags",
+        usdPrice: 54.00,
+        miles: 6750,
+        desc: "Roll-top water-sealed backpack for outdoor and urban commuting."
+      },
+      {
+        id: "ek-luxe-backpack",
+        name: "EK Luxe City Laptop Backpack",
+        category: "bags",
+        categoryName: "Luggage & Bags",
+        usdPrice: 39.00,
+        miles: 4875,
+        desc: "Sleek commuter backpack with padded 15.6 inch laptop sleeve."
+      },
+      {
+        id: "neo-laptop-sleeve",
+        name: "Emirates neo Laptop Sleeve (14\"/16\")",
+        category: "bags",
+        categoryName: "Luggage & Bags",
+        usdPrice: 42.00,
+        miles: 5250,
+        desc: "Neoprene and vegan leather hybrid sleeve with magnetic closure."
+      },
+
+      // Travel Essentials
+      {
+        id: "packing-cubes",
+        name: "Urban Travellers 6-Piece Packing Cubes Set",
+        category: "travel",
+        categoryName: "Travel Essentials",
+        usdPrice: 32.00,
+        miles: 4000,
+        desc: "Compressible ripstop nylon cubes to keep your suitcase impeccably organized."
+      },
+      {
+        id: "ek-washbag",
+        name: "EK Luxe Hanging Toiletry Washbag",
+        category: "travel",
+        categoryName: "Travel Essentials",
+        usdPrice: 35.00,
+        miles: 4375,
+        desc: "Water-resistant fold-out toiletry kit with swivel hook for hotel bathrooms."
+      },
+      {
+        id: "memory-pillow",
+        name: "First Class Style Memory Foam Neck Pillow",
+        category: "travel",
+        categoryName: "Travel Essentials",
+        usdPrice: 28.00,
+        miles: 3500,
+        desc: "360-degree ergonomic head support with plush removable velvet cover."
+      },
+      {
+        id: "leather-wallet",
+        name: "Leather Travel Wallet & Passport Holder",
+        category: "travel",
+        categoryName: "Travel Essentials",
+        usdPrice: 38.00,
+        miles: 4750,
+        desc: "Full-grain genuine leather organizer for boarding passes, cards, and passport."
+      },
+      {
+        id: "rfid-passport",
+        name: "Premium RFID Blocking Passport Case",
+        category: "travel",
+        categoryName: "Travel Essentials",
+        usdPrice: 22.00,
+        miles: 2750,
+        desc: "Slim embossed passport protector with anti-skimming security shield."
+      },
+      {
+        id: "travel-adapter",
+        name: "Universal Multi-Nation Travel Adapter",
+        category: "travel",
+        categoryName: "Travel Essentials",
+        usdPrice: 25.00,
+        miles: 3125,
+        desc: "Worldwide all-in-one plug adapter with dual USB fast-charge ports."
+      },
+
+      // Accessories & Lifestyle
+      {
+        id: "insulated-tumbler",
+        name: "Emirates Stainless Steel Thermal Tumbler",
+        category: "accessories",
+        categoryName: "Accessories & Lifestyle",
+        usdPrice: 24.00,
+        miles: 3000,
+        desc: "Double-wall vacuum insulation keeps drinks cold for 24h or hot for 12h."
+      },
+      {
+        id: "gold-logo-cap",
+        name: "Classic Emirates Gold Embroidered Cap",
+        category: "accessories",
+        categoryName: "Accessories & Lifestyle",
+        usdPrice: 24.00,
+        miles: 3000,
+        desc: "Structured 6-panel breathable cotton cap with metallic gold crest."
+      },
+      {
+        id: "crew-hat-keyring",
+        name: "Emirates Cabin Crew Red Hat Keyring",
+        category: "accessories",
+        categoryName: "Accessories & Lifestyle",
+        usdPrice: 9.00,
+        miles: 1125,
+        desc: "Iconic enamel replica of the worldwide famous red cabin crew hat."
+      },
+      {
+        id: "remove-ribbon",
+        name: "Remove Before Flight Ribbon Keychain",
+        category: "accessories",
+        categoryName: "Accessories & Lifestyle",
+        usdPrice: 8.00,
+        miles: 1000,
+        desc: "Aviation classic woven ribbon with heavy-duty steel ring."
+      },
+      {
+        id: "playing-cards",
+        name: "Emirates Heritage Gold Foil Playing Cards",
+        category: "accessories",
+        categoryName: "Accessories & Lifestyle",
+        usdPrice: 12.00,
+        miles: 1500,
+        desc: "Collector card deck in an embossed presentation tin box."
+      }
+    ];
+
+    // Shipping Destination Info
+    const SHIPPING_INFO = {
+      UK: {
+        name: "United Kingdom",
+        fee: "$25.00 USD",
+        advice: "🇬🇧 £0 duty on orders under £135. Standard 20% VAT applies upon import. Smoothest shipping experience."
+      },
+      NL: {
+        name: "Netherlands",
+        fee: "$25.00 USD",
+        advice: "🇳🇱 21% Dutch import VAT on non-EU goods + carrier handling (€10–€15). Fast and reliable."
+      },
+      IN: {
+        name: "India",
+        fee: "$25.00 USD",
+        advice: "🇮🇳 High customs duties (42%–77%) + mandatory KYC upload required before release. Avoid if possible."
+      }
+    };
+
+    // State
+    let cart = {}; // { productId: quantity }
+    let startingBudget = 21975;
+    let activeCategory = "all";
+    let searchQuery = "";
+    let selectedCountry = "UK";
+
+    // DOM Elements
+    const budgetInput = document.getElementById("budgetInput");
+    const milesUsedDisplay = document.getElementById("milesUsedDisplay");
+    const milesRemainingDisplay = document.getElementById("milesRemainingDisplay");
+    const usdValueDisplay = document.getElementById("usdValueDisplay");
+    const progressBar = document.getElementById("progressBar");
+    const productsGrid = document.getElementById("productsGrid");
+    const searchInput = document.getElementById("searchInput");
+    const filterPills = document.querySelectorAll(".filter-pill");
+    const cartItemsList = document.getElementById("cartItemsList");
+    const cartCount = document.getElementById("cartCount");
+    const summaryBudget = document.getElementById("summaryBudget");
+    const summaryUsed = document.getElementById("summaryUsed");
+    const summaryLeft = document.getElementById("summaryLeft");
+    const summaryUsd = document.getElementById("summaryUsd");
+    const shippingSelect = document.getElementById("shippingSelect");
+    const shippingAdvice = document.getElementById("shippingAdvice");
+    const btnShareWhatsApp = document.getElementById("btnShareWhatsApp");
+    const btnClearCart = document.getElementById("btnClearCart");
+    const mobileCartTrigger = document.getElementById("mobileCartTrigger");
+    const mobileCartCount = document.getElementById("mobileCartCount");
+    const mobileMilesLeft = document.getElementById("mobileMilesLeft");
+    const cartSidebar = document.getElementById("cartSidebar");
+    const cartBackdrop = document.getElementById("cartBackdrop");
+    const closeCartBtn = document.getElementById("closeCartBtn");
+    const toast = document.getElementById("toast");
+
+    // Init
+    function init() {
+      renderProducts();
+      updateCartAndMetrics();
+
+      // Listeners
+      budgetInput.addEventListener("input", (e) => {
+        startingBudget = parseInt(e.target.value) || 0;
+        updateCartAndMetrics();
+      });
+
+      searchInput.addEventListener("input", (e) => {
+        searchQuery = e.target.value.toLowerCase().trim();
+        renderProducts();
+      });
+
+      filterPills.forEach(pill => {
+        pill.addEventListener("click", () => {
+          filterPills.forEach(p => p.classList.remove("active"));
+          pill.classList.add("active");
+          activeCategory = pill.dataset.category;
+          renderProducts();
+        });
+      });
+
+      shippingSelect.addEventListener("change", (e) => {
+        selectedCountry = e.target.value;
+        shippingAdvice.textContent = SHIPPING_INFO[selectedCountry].advice;
+      });
+
+      btnShareWhatsApp.addEventListener("click", copyWhatsAppSummary);
+      btnClearCart.addEventListener("click", () => {
+        cart = {};
+        updateCartAndMetrics();
+        showToast("Cart cleared");
+      });
+
+      // Mobile drawer toggles
+      mobileCartTrigger.addEventListener("click", () => {
+        cartSidebar.classList.add("open");
+        cartBackdrop.classList.add("open");
+        closeCartBtn.style.display = "block";
+      });
+
+      const closeDrawer = () => {
+        cartSidebar.classList.remove("open");
+        cartBackdrop.classList.remove("open");
+      };
+      cartBackdrop.addEventListener("click", closeDrawer);
+      closeCartBtn.addEventListener("click", closeDrawer);
+    }
+
+    // Render Products Grid
+    function renderProducts() {
+      const filtered = PRODUCTS.filter(p => {
+        const matchesCategory = (activeCategory === "all") || (p.category === activeCategory);
+        const matchesSearch = !searchQuery || 
+          p.name.toLowerCase().includes(searchQuery) || 
+          p.desc.toLowerCase().includes(searchQuery) ||
+          p.categoryName.toLowerCase().includes(searchQuery);
+        return matchesCategory && matchesSearch;
+      });
+
+      if (filtered.length === 0) {
+        productsGrid.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
+            No merchandise found matching your search.
+          </div>
+        `;
+        return;
+      }
+
+      productsGrid.innerHTML = filtered.map(p => `
+        <div class="product-card">
+          <span class="product-badge">${p.categoryName}</span>
+          <h3 class="product-title">${p.name}</h3>
+          <p class="product-desc">${p.desc}</p>
+          <div class="product-price-row">
+            <span class="product-miles">${p.miles.toLocaleString()} Miles</span>
+            <span class="product-usd">$${p.usdPrice.toFixed(2)} USD</span>
+          </div>
+          <button class="btn-add" onclick="addToCart('${p.id}')">
+            ➕ Add to Cart
+          </button>
+        </div>
+      `).join("");
+    }
+
+    // Add to Cart
+    window.addToCart = function(productId) {
+      cart[productId] = (cart[productId] || 0) + 1;
+      updateCartAndMetrics();
+      showToast("Added to rewards cart!");
+    };
+
+    // Modify Quantity
+    window.changeQty = function(productId, delta) {
+      if (!cart[productId]) return;
+      cart[productId] += delta;
+      if (cart[productId] <= 0) {
+        delete cart[productId];
+      }
+      updateCartAndMetrics();
+    };
+
+    // Calculate Totals & Update UI
+    function updateCartAndMetrics() {
+      let totalMiles = 0;
+      let totalUsd = 0;
+      let totalItems = 0;
+
+      // Render cart items
+      const cartKeys = Object.keys(cart);
+      if (cartKeys.length === 0) {
+        cartItemsList.innerHTML = `<div class="empty-cart-msg">Your cart is empty.<br>Select items from the store to calculate your miles.</div>`;
+      } else {
+        cartItemsList.innerHTML = cartKeys.map(id => {
+          const product = PRODUCTS.find(p => p.id === id);
+          if (!product) return "";
+          const qty = cart[id];
+          const itemMiles = product.miles * qty;
+          const itemUsd = product.usdPrice * qty;
+          totalMiles += itemMiles;
+          totalUsd += itemUsd;
+          totalItems += qty;
+
+          return `
+            <div class="cart-item">
+              <div class="cart-item-info">
+                <div class="cart-item-name" title="${product.name}">${product.name}</div>
+                <div class="cart-item-cost">${itemMiles.toLocaleString()} Miles ($${itemUsd.toFixed(2)})</div>
+              </div>
+              <div class="cart-item-controls">
+                <button class="btn-qty" onclick="changeQty('${id}', -1)">-</button>
+                <span class="qty-display">${qty}</span>
+                <button class="btn-qty" onclick="changeQty('${id}', 1)">+</button>
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      const remainingMiles = startingBudget - totalMiles;
+      const pctUsed = startingBudget > 0 ? Math.min(100, Math.max(0, (totalMiles / startingBudget) * 100)) : 100;
+
+      // Update Header Metrics
+      milesUsedDisplay.textContent = totalMiles.toLocaleString();
+      usdValueDisplay.textContent = `$${totalUsd.toFixed(2)}`;
+
+      if (remainingMiles >= 0) {
+        milesRemainingDisplay.textContent = remainingMiles.toLocaleString();
+        milesRemainingDisplay.className = "metric-value remaining";
+      } else {
+        milesRemainingDisplay.textContent = `${Math.abs(remainingMiles).toLocaleString()} Over`;
+        milesRemainingDisplay.className = "metric-value overbudget";
+      }
+
+      // Update Progress Bar
+      progressBar.style.width = `${pctUsed}%`;
+      progressBar.className = "progress-bar-fill";
+      if (remainingMiles < 0) {
+        progressBar.classList.add("danger");
+      } else if (pctUsed > 80) {
+        progressBar.classList.add("warning");
+      }
+
+      // Update Cart Summary
+      cartCount.textContent = totalItems;
+      mobileCartCount.textContent = totalItems;
+      mobileMilesLeft.textContent = `${remainingMiles >= 0 ? remainingMiles.toLocaleString() : '0'} pts left`;
+
+      summaryBudget.textContent = `${startingBudget.toLocaleString()} Miles`;
+      summaryUsed.textContent = `${totalMiles.toLocaleString()} Miles`;
+      summaryLeft.textContent = `${remainingMiles.toLocaleString()} Miles`;
+      summaryLeft.style.color = remainingMiles >= 0 ? "var(--success)" : "var(--danger)";
+      summaryUsd.textContent = `$${totalUsd.toFixed(2)} USD`;
+    }
+
+    // Copy formatted text for WhatsApp
+    function copyWhatsAppSummary() {
+      const cartKeys = Object.keys(cart);
+      if (cartKeys.length === 0) {
+        showToast("Cart is empty! Add items first.");
+        return;
+      }
+
+      let totalMiles = 0;
+      let totalUsd = 0;
+      let itemsListText = "";
+
+      cartKeys.forEach(id => {
+        const product = PRODUCTS.find(p => p.id === id);
+        if (product) {
+          const qty = cart[id];
+          const itemMiles = product.miles * qty;
+          totalMiles += itemMiles;
+          totalUsd += product.usdPrice * qty;
+          itemsListText += `• ${qty}x ${product.name} — *${itemMiles.toLocaleString()} miles* ($${(product.usdPrice * qty).toFixed(2)})\n`;
+        }
+      });
+
+      const remaining = startingBudget - totalMiles;
+      const shipping = SHIPPING_INFO[selectedCountry];
+
+      const text = 
+`✈️ *My Emirates Skywards Rewards Selection*
+━━━━━━━━━━━━━━━━━━
+💰 *Budget:* ${startingBudget.toLocaleString()} Miles
+🎁 *Points Used:* ${totalMiles.toLocaleString()} Miles
+✨ *Points Left:* ${remaining.toLocaleString()} Miles
+💵 *Total Store Value:* $${totalUsd.toFixed(2)} USD
+
+📦 *Selected Items:*
+${itemsListText}
+🚚 *Shipping to:* ${shipping.name} (${shipping.fee})
+${shipping.advice}
+
+🔗 *Redeem on:* https://www.emirates.store/ (Choose "Pay with Skywards Miles" at checkout)`;
+
+      navigator.clipboard.writeText(text).then(() => {
+        showToast("📋 Copied summary for WhatsApp!");
+      }).catch(() => {
+        showToast("Failed to copy automatically.");
+      });
+    }
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add("show");
+      setTimeout(() => {
+        toast.classList.remove("show");
+      }, 2500);
+    }
+
+    init();
+  </script>
+</body>
+</html>
